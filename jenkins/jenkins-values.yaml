@@ -1,0 +1,82 @@
+controller:
+  # Acceso desde el host en Kind
+  serviceType: NodePort
+  nodePort: 32000
+
+  # Plugins requeridos para los pipelines
+  installPlugins:
+    - git:latest
+    - workflow-aggregator:latest
+    - docker-workflow:latest
+    - kubernetes-cli:latest
+    - credentials-binding:latest
+    - junit:latest
+    - htmlpublisher:latest
+    - jacoco:latest
+    - pipeline-stage-view:latest
+    - blueocean:latest
+    - github:latest
+
+  # Necesario para que el contenedor acceda al Docker socket del host
+  # Esto permite hacer docker build/push desde los pipelines sin kaniko
+  securityContext:
+    runAsUser: 0
+    runAsGroup: 0
+    fsGroup: 0
+
+  # Montar el socket de Docker del host
+  additionalVolumes:
+    - name: docker-sock
+      hostPath:
+        path: /var/run/docker.sock
+        type: Socket
+
+  additionalVolumeMounts:
+    - name: docker-sock
+      mountPath: /var/run/docker.sock
+
+  # Configuración inicial via JCasC (Jenkins Configuration as Code)
+  JCasC:
+    defaultConfig: true
+    configScripts:
+      circleguard-config: |
+        jenkins:
+          systemMessage: "CircleGuard CI/CD — Kind cluster"
+          numExecutors: 4
+          scmCheckoutRetryCount: 2
+        unclassified:
+          location:
+            url: "http://localhost:32000/"
+
+  # Recursos del pod de Jenkins
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "3Gi"
+
+  # Variables de entorno disponibles en todos los pipelines
+  containerEnv:
+    - name: DOCKER_REGISTRY
+      value: "localhost:5000"
+    - name: KIND_CLUSTER
+      value: "circleguard"
+    - name: GRADLE_OPTS
+      value: "-Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
+
+persistence:
+  enabled: true
+  size: 10Gi
+
+# El agente por defecto usa la imagen inbound-agent estándar
+agent:
+  enabled: true
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
