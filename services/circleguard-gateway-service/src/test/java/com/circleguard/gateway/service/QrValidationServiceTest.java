@@ -11,6 +11,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.security.Key;
+import java.util.Date;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -61,7 +62,47 @@ public class QrValidationServiceTest {
         Mockito.when(valueOps.get("user:status:" + anonymousId)).thenReturn("CONTAGIED");
 
         QrValidationService.ValidationResult result = service.validateToken(token);
-        
+
+        assertFalse(result.valid());
+        assertEquals("RED", result.status());
+    }
+
+    @Test
+    void validateToken_returnsInvalidForExpiredToken() {
+        Key key = Keys.hmacShaKeyFor(secret.getBytes());
+        String token = Jwts.builder()
+                .setSubject(UUID.randomUUID().toString())
+                .setExpiration(new Date(System.currentTimeMillis() - 1000))
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+
+        QrValidationService.ValidationResult result = service.validateToken(token);
+
+        assertFalse(result.valid());
+        assertEquals("RED", result.status());
+    }
+
+    @Test
+    void validateToken_returnsInvalidForMalformedJwt() {
+        QrValidationService.ValidationResult result = service.validateToken("not.a.valid.jwt.token");
+
+        assertFalse(result.valid());
+        assertEquals("RED", result.status());
+    }
+
+    @Test
+    void validateToken_returnsDenialForPotentialStatus() {
+        String anonymousId = UUID.randomUUID().toString();
+        Key key = Keys.hmacShaKeyFor(secret.getBytes());
+        String token = Jwts.builder()
+                .setSubject(anonymousId)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+
+        Mockito.when(valueOps.get("user:status:" + anonymousId)).thenReturn("POTENTIAL");
+
+        QrValidationService.ValidationResult result = service.validateToken(token);
+
         assertFalse(result.valid());
         assertEquals("RED", result.status());
     }

@@ -19,7 +19,8 @@ public class FileStorageService {
     }
 
     public String saveFile(MultipartFile file) {
-        String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+        String original = Paths.get(file.getOriginalFilename()).getFileName().toString();
+        String filename = UUID.randomUUID().toString() + "_" + original;
         try {
             Files.copy(file.getInputStream(), this.root.resolve(filename));
             return filename;
