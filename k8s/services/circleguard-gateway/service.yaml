@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: circleguard-gateway
+  namespace: circleguard-dev
+spec:
+  selector:
+    app: circleguard-gateway
+  ports:
+    - port: 8087
+      targetPort: 8087
