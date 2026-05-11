@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: circleguard-file
+  namespace: circleguard-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: circleguard-file
+  template:
+    metadata:
+      labels:
+        app: circleguard-file
+    spec:
+      containers:
+        - name: circleguard-file
+          image: localhost:5000/circleguard/file-service:dev
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8085
+          envFrom:
+            - configMapRef:
+                name: circleguard-file-config
+          volumeMounts:
+            - name: uploads
+              mountPath: /uploads
+          readinessProbe:
+            tcpSocket:
+              port: 8085
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+      volumes:
+        - name: uploads
+          emptyDir: {}

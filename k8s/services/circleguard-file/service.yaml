@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: circleguard-file
+  namespace: circleguard-dev
+spec:
+  selector:
+    app: circleguard-file
+  ports:
+    - port: 8085
+      targetPort: 8085
