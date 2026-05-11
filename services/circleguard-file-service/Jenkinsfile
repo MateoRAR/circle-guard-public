@@ -1,0 +1,69 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_REGISTRY = 'localhost:5000'
+        IMAGE_NAME      = 'circleguard/file-service'
+        IMAGE_TAG       = 'dev'
+        DEPLOYMENT_NAME = 'circleguard-file'
+        K8S_NAMESPACE   = 'circleguard-dev'
+        K8S_DIR         = 'k8s/services/circleguard-file'
+        GRADLE_TARGET   = ':services:circleguard-file-service'
+        PATH            = "/var/jenkins_home/bin:${env.PATH}"
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                sh './gradlew ${GRADLE_TARGET}:build -x test'
+            }
+        }
+
+        stage('Unit Test') {
+            steps {
+                sh './gradlew ${GRADLE_TARGET}:test'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh 'docker build -f services/circleguard-file-service/Dockerfile -t ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} .'
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                sh 'docker push ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}'
+            }
+        }
+
+        stage('Deploy Dev') {
+            steps {
+                withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
+                    sh 'kubectl apply -f ${K8S_DIR}/ -n ${K8S_NAMESPACE}'
+                    sh 'kubectl rollout restart deployment/${DEPLOYMENT_NAME} -n ${K8S_NAMESPACE}'
+                }
+            }
+        }
+
+        stage('Verify Rollout') {
+            steps {
+                withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
+                    sh 'kubectl rollout status deployment/${DEPLOYMENT_NAME} -n ${K8S_NAMESPACE} --timeout=180s'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            junit allowEmptyResults: true, testResults: 'services/circleguard-file-service/build/test-results/**/*.xml'
+        }
+        failure {
+            echo 'Pipeline failed for circleguard-file-service'
+        }
+        success {
+            echo 'circleguard-file-service deployed successfully to circleguard-dev'
+        }
+    }
+}
