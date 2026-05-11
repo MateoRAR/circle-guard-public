@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: circleguard-promotion
+  namespace: circleguard-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: circleguard-promotion
+  template:
+    metadata:
+      labels:
+        app: circleguard-promotion
+    spec:
+      containers:
+        - name: circleguard-promotion
+          image: localhost:5000/circleguard/promotion-service:dev
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8088
+          envFrom:
+            - configMapRef:
+                name: circleguard-promotion-config
+            - secretRef:
+                name: circleguard-promotion-secret
+          readinessProbe:
+            tcpSocket:
+              port: 8088
+            initialDelaySeconds: 45
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 500m
+              memory: 768Mi
+            limits:
+              cpu: 1000m
+              memory: 1536Mi

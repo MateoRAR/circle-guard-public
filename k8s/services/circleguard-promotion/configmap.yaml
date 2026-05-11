@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: circleguard-promotion-config
+  namespace: circleguard-dev
+data:
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/circleguard_promotion
+  SPRING_DATASOURCE_USERNAME: admin
+  SPRING_JPA_HIBERNATE_DDL_AUTO: update
+  SPRING_NEO4J_URI: bolt://neo4j:7687
+  SPRING_NEO4J_AUTHENTICATION_USERNAME: neo4j
+  SPRING_DATA_REDIS_HOST: redis
+  SPRING_DATA_REDIS_PORT: "6379"
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  SPRING_KAFKA_CONSUMER_GROUP_ID: promotion-service-group
+  SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+  JWT_EXPIRATION: "3600000"
+  SERVER_PORT: "8088"
