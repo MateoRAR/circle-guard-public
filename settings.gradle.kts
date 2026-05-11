@@ -16,6 +16,9 @@ rootProject.name = "circleguard"
 // include("libs:circleguard-security")
 // include("libs:circleguard-events")
 
+// E2E tests (run against deployed dev namespace)
+include("e2e")
+
 // Microservices
 include("services:circleguard-auth-service")
 include("services:circleguard-identity-service")
