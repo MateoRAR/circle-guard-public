@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: circleguard-dashboard-config
+  namespace: circleguard-dev
+data:
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/circleguard_dashboard
+  SPRING_DATASOURCE_USERNAME: admin
+  SPRING_JPA_HIBERNATE_DDL_AUTO: update
+  PROMOTION_SERVICE_URL: http://circleguard-promotion:8088
+  SERVER_PORT: "8084"

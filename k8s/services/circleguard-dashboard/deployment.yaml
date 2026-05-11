@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: circleguard-dashboard
+  namespace: circleguard-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: circleguard-dashboard
+  template:
+    metadata:
+      labels:
+        app: circleguard-dashboard
+    spec:
+      containers:
+        - name: circleguard-dashboard
+          image: localhost:5000/circleguard/dashboard-service:dev
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8084
+          envFrom:
+            - configMapRef:
+                name: circleguard-dashboard-config
+            - secretRef:
+                name: circleguard-dashboard-secret
+          readinessProbe:
+            tcpSocket:
+              port: 8084
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
