@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: circleguard-auth
+  namespace: circleguard-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: circleguard-auth
+  template:
+    metadata:
+      labels:
+        app: circleguard-auth
+    spec:
+      containers:
+        - name: circleguard-auth
+          image: localhost:5000/circleguard/auth-service:dev
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8180
+          envFrom:
+            - configMapRef:
+                name: circleguard-auth-config
+            - secretRef:
+                name: circleguard-auth-secret
+          readinessProbe:
+            tcpSocket:
+              port: 8180
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi

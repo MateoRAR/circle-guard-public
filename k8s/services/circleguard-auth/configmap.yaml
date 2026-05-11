@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: circleguard-auth-config
+  namespace: circleguard-dev
+data:
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/circleguard_auth
+  SPRING_DATASOURCE_USERNAME: admin
+  SPRING_JPA_HIBERNATE_DDL_AUTO: update
+  SPRING_LDAP_URLS: ldap://ldap:389
+  SPRING_LDAP_BASE: dc=circleguard,dc=edu
+  SPRING_LDAP_USERNAME: cn=admin,dc=circleguard,dc=edu
+  JWT_EXPIRATION: "3600000"
+  QR_EXPIRATION: "300000"
+  IDENTITY_SERVICE_URL: http://circleguard-identity:8083
+  SERVER_PORT: "8180"
