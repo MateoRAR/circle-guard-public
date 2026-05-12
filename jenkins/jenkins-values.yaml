@@ -1,14 +1,13 @@
 controller:
-  # Acceso desde el host en Kind
   serviceType: NodePort
   nodePort: 32000
 
-  # Plugins requeridos para los pipelines
   installPlugins:
     - git:latest
     - workflow-aggregator:latest
     - docker-workflow:latest
     - kubernetes-cli:latest
+    - kubernetes:latest
     - credentials-binding:latest
     - junit:latest
     - htmlpublisher:latest
@@ -17,66 +16,181 @@ controller:
     - blueocean:latest
     - github:latest
 
-  # Necesario para que el contenedor acceda al Docker socket del host
-  # Esto permite hacer docker build/push desde los pipelines sin kaniko
   securityContext:
     runAsUser: 0
     runAsGroup: 0
     fsGroup: 0
+    runAsNonRoot: false
 
-  # Montar el socket de Docker del host
-  additionalVolumes:
-    - name: docker-sock
-      hostPath:
-        path: /var/run/docker.sock
-        type: Socket
+  podSecurityContextOverride:
+    runAsUser: 0
+    runAsGroup: 0
+    fsGroup: 0
+    runAsNonRoot: false
+    seccompProfile:
+      type: Unconfined
 
-  additionalVolumeMounts:
-    - name: docker-sock
-      mountPath: /var/run/docker.sock
+  containerSecurityContext:
+    runAsUser: 0
+    runAsGroup: 0
+    runAsNonRoot: false
+    privileged: true
+    allowPrivilegeEscalation: true
+    capabilities:
+      drop: []
+    seccompProfile:
+      type: Unconfined
 
-  # Configuración inicial via JCasC (Jenkins Configuration as Code)
+  initContainerSecurityContext:
+    runAsUser: 0
+    runAsGroup: 0
+    runAsNonRoot: false
+    allowPrivilegeEscalation: true
+    capabilities:
+      drop: []
+    seccompProfile:
+      type: Unconfined
+
+  initContainerEnv:
+    - name: HOME
+      value: "/tmp"
+    - name: JAVA_TOOL_OPTIONS
+      value: "-Duser.home=/tmp"
+
+  lifecycle:
+    postStart:
+      exec:
+        command:
+          - /bin/sh
+          - -c
+          - |
+            mkdir -p /var/jenkins_home/bin
+
+            if [ ! -f /var/jenkins_home/bin/docker ]; then
+              curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.5.0.tgz \
+                | tar -xz --strip-components=1 -C /var/jenkins_home/bin docker/docker
+
+              chmod +x /var/jenkins_home/bin/docker
+            fi
+
+  additionalVolumes: []
+  additionalVolumeMounts: []
+
+  sidecars:
+    additionalSidecarContainers:
+      - name: docker-dind
+        image: docker:27-dind
+
+        command:
+          - dockerd
+
+        args:
+          - "--host=tcp://0.0.0.0:2375"
+          - "--iptables=false"
+          - "--storage-driver=overlay2"
+
+        securityContext:
+          privileged: true
+          runAsUser: 0
+          runAsGroup: 0
+          runAsNonRoot: false
+          allowPrivilegeEscalation: true
+          capabilities:
+            drop: []
+          seccompProfile:
+            type: Unconfined
+
+        env:
+          - name: DOCKER_TLS_CERTDIR
+            value: ""
+
+        volumeMounts:
+          - name: lib-modules
+            mountPath: /lib/modules
+            readOnly: true
+
+          - name: docker-graph-storage
+            mountPath: /var/lib/docker
+
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+
   JCasC:
     defaultConfig: true
+
     configScripts:
       circleguard-config: |
         jenkins:
           systemMessage: "CircleGuard CI/CD — Kind cluster"
           numExecutors: 4
           scmCheckoutRetryCount: 2
+
         unclassified:
           location:
             url: "http://localhost:32000/"
 
-  # Recursos del pod de Jenkins
   resources:
     requests:
       cpu: "500m"
       memory: "1Gi"
+
     limits:
       cpu: "2"
       memory: "3Gi"
 
-  # Variables de entorno disponibles en todos los pipelines
   containerEnv:
+    # Include Java path from JDK21 image + jenkins home bin for docker CLI
+    - name: PATH
+      value: "/var/jenkins_home/bin:/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
     - name: DOCKER_REGISTRY
       value: "localhost:5000"
+
     - name: KIND_CLUSTER
       value: "circleguard"
+
     - name: GRADLE_OPTS
       value: "-Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
+
+    - name: DOCKER_HOST
+      value: "tcp://localhost:2375"
+
+    - name: TESTCONTAINERS_HOST_OVERRIDE
+      value: "localhost"
+
+    - name: TESTCONTAINERS_RYUK_DISABLED
+      value: "true"
+
+    - name: DOCKER_TLS_CERTDIR
+      value: ""
 
 persistence:
   enabled: true
   size: 10Gi
 
-# El agente por defecto usa la imagen inbound-agent estándar
+  volumes:
+    - name: lib-modules
+      hostPath:
+        path: /lib/modules
+        type: Directory
+
+    - name: docker-graph-storage
+      emptyDir: {}
+
 agent:
   enabled: true
+
   resources:
     requests:
       cpu: "500m"
       memory: "512Mi"
+
     limits:
       cpu: "1"
       memory: "1Gi"

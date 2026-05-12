@@ -20,6 +20,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.security.Key;
 import java.util.List;
@@ -28,7 +29,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @ActiveProfiles("integration")
 class IdentityVaultIntegrationTest {
 
@@ -54,10 +55,11 @@ class IdentityVaultIntegrationTest {
     @SuppressWarnings("rawtypes")
     private KafkaTemplate kafkaTemplate;
 
-    private static final String JWT_SECRET = "my-super-secret-dev-key-32-chars-long-12345678";
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
     private String buildTestToken(String authority) {
-        Key key = Keys.hmacShaKeyFor(JWT_SECRET.getBytes());
+        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
         return Jwts.builder()
                 .setSubject("test-user")
                 .claim("permissions", List.of(authority))
