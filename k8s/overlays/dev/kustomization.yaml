@@ -4,7 +4,6 @@ kind: Kustomization
 namespace: circleguard-dev
 
 resources:
-  - ../../infra
   - ../../services
 
 # Images already tagged :dev in the base manifests — no transform needed for dev.
