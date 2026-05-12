@@ -1,8 +1,7 @@
 FROM gradle:8-jdk21 AS builder
 WORKDIR /app
 COPY . .
-RUN sed -i 's/\r//' gradlew && chmod +x gradlew
-RUN ./gradlew :services:circleguard-gateway-service:bootJar -x test --no-daemon
+RUN gradle :services:circleguard-gateway-service:bootJar -x test --no-daemon
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
