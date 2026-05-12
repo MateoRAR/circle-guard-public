@@ -2,14 +2,15 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY = 'localhost:5000'
-        IMAGE_NAME      = 'circleguard/identity-service'
-        IMAGE_TAG       = 'dev'
-        DEPLOYMENT_NAME = 'circleguard-identity'
-        K8S_NAMESPACE   = 'circleguard-dev'
-        K8S_DIR         = 'k8s/services/circleguard-identity'
-        GRADLE_TARGET   = ':services:circleguard-identity-service'
-        PATH            = "/var/jenkins_home/bin:${env.PATH}"
+        DOCKER_REGISTRY   = 'localhost:5000'
+        IMAGE_NAME        = 'circleguard/identity-service'
+        IMAGE_TAG         = 'dev'
+        DEPLOYMENT_NAME   = 'circleguard-identity'
+        K8S_NAMESPACE     = 'circleguard-dev'
+        K8S_DIR           = 'k8s/services/circleguard-identity'
+        GRADLE_TARGET     = ':services:circleguard-identity-service'
+        GRADLE_USER_HOME  = '/var/jenkins_home/.gradle'
+        PATH              = "/var/jenkins_home/bin:${env.PATH}"
     }
 
     stages {
@@ -75,4 +76,4 @@ pipeline {
             echo 'circleguard-identity-service deployed successfully to circleguard-dev'
         }
     }
-}
+}   

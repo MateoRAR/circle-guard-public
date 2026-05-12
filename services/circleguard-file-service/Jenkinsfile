@@ -2,14 +2,15 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY = 'localhost:5000'
-        IMAGE_NAME      = 'circleguard/file-service'
-        IMAGE_TAG       = 'dev'
-        DEPLOYMENT_NAME = 'circleguard-file'
-        K8S_NAMESPACE   = 'circleguard-dev'
-        K8S_DIR         = 'k8s/services/circleguard-file'
-        GRADLE_TARGET   = ':services:circleguard-file-service'
-        PATH            = "/var/jenkins_home/bin:${env.PATH}"
+        DOCKER_REGISTRY  = 'localhost:5000'
+        IMAGE_NAME       = 'circleguard/file-service'
+        IMAGE_TAG        = 'dev'
+        DEPLOYMENT_NAME  = 'circleguard-file'
+        K8S_NAMESPACE    = 'circleguard-dev'
+        K8S_DIR          = 'k8s/services/circleguard-file'
+        GRADLE_TARGET    = ':services:circleguard-file-service'
+        GRADLE_USER_HOME = '/var/jenkins_home/.gradle'
+        PATH             = "/var/jenkins_home/bin:${env.PATH}"
     }
 
     stages {
