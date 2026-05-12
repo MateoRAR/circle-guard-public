@@ -27,10 +27,12 @@ subprojects {
     dependencies {
         "implementation"(platform("org.springframework.boot:spring-boot-dependencies:3.2.4"))
         "testImplementation"(platform("org.springframework.boot:spring-boot-dependencies:3.2.4"))
-        "compileOnly"("org.projectlombok:lombok")
-        "annotationProcessor"("org.projectlombok:lombok")
-        "testCompileOnly"("org.projectlombok:lombok")
-        "testAnnotationProcessor"("org.projectlombok:lombok")
+        if (project.name != "e2e") {
+            "compileOnly"("org.projectlombok:lombok")
+            "annotationProcessor"("org.projectlombok:lombok")
+            "testCompileOnly"("org.projectlombok:lombok")
+            "testAnnotationProcessor"("org.projectlombok:lombok")
+        }
         "implementation"("org.jetbrains.kotlin:kotlin-reflect")
         "testImplementation"("org.springframework.boot:spring-boot-starter-test")
         "testRuntimeOnly"("com.h2database:h2")
