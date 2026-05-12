@@ -111,7 +111,7 @@ class IdentityVaultIntegrationTest {
         HttpEntity<Void> request = new HttpEntity<>(headers);
 
         ResponseEntity<Map> response = restTemplate.exchange(
-                "/api/v1/identities/lookup/non-existent-id", HttpMethod.GET, request, Map.class);
+                "/api/v1/identities/lookup/" + java.util.UUID.randomUUID(), HttpMethod.GET, request, Map.class);
 
         assertEquals(403, response.getStatusCode().value());
     }

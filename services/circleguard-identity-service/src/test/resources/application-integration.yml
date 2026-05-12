@@ -10,3 +10,6 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
