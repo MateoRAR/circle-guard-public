@@ -54,7 +54,7 @@ public class AnalyticsService {
      * Provides aggregated, university-wide health metrics for leadership.
      */
     public Map<String, Object> getGlobalHealthStats() {
-        return getCampusSummary();
+        return kAnonymityFilter.apply(getCampusSummary());
     }
 
     /**
