@@ -103,16 +103,30 @@ pipeline {
 
         stage('Deploy Stage') {
             steps {
-                withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
-                    sh "kubectl apply -k k8s/overlays/stage/"
-                    sh """
-                        kubectl rollout restart deployment/circleguard-identity  -n ${K8S_NAMESPACE}
-                        kubectl rollout restart deployment/circleguard-auth      -n ${K8S_NAMESPACE}
-                        kubectl rollout restart deployment/circleguard-gateway   -n ${K8S_NAMESPACE}
-                        kubectl rollout restart deployment/circleguard-promotion -n ${K8S_NAMESPACE}
-                        kubectl rollout restart deployment/circleguard-dashboard -n ${K8S_NAMESPACE}
-                        kubectl rollout restart deployment/circleguard-file      -n ${K8S_NAMESPACE}
-                    """
+                withCredentials([
+                    string(credentialsId: 'jwt-secret',      variable: 'JWT_SECRET'),
+                    string(credentialsId: 'qr-secret',       variable: 'QR_SECRET'),
+                    string(credentialsId: 'vault-secret',    variable: 'VAULT_SECRET'),
+                    string(credentialsId: 'vault-salt',      variable: 'VAULT_SALT'),
+                    string(credentialsId: 'vault-hash-salt', variable: 'VAULT_HASH_SALT')
+                ]) {
+                    withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
+                        sh "kubectl apply -k k8s/overlays/stage/"
+                        sh """
+                            kubectl patch secret circleguard-auth-secret     -n ${K8S_NAMESPACE} -p '{"stringData":{"JWT_SECRET":"'\$JWT_SECRET'","QR_SECRET":"'\$QR_SECRET'"}}'
+                            kubectl patch secret circleguard-identity-secret  -n ${K8S_NAMESPACE} -p '{"stringData":{"JWT_SECRET":"'\$JWT_SECRET'","VAULT_SECRET":"'\$VAULT_SECRET'","VAULT_SALT":"'\$VAULT_SALT'","VAULT_HASH_SALT":"'\$VAULT_HASH_SALT'"}}'
+                            kubectl patch secret circleguard-promotion-secret -n ${K8S_NAMESPACE} -p '{"stringData":{"JWT_SECRET":"'\$JWT_SECRET'"}}'
+                            kubectl patch secret circleguard-gateway-secret   -n ${K8S_NAMESPACE} -p '{"stringData":{"JWT_SECRET":"'\$JWT_SECRET'","QR_SECRET":"'\$QR_SECRET'"}}'
+                        """
+                        sh """
+                            kubectl rollout restart deployment/circleguard-identity  -n ${K8S_NAMESPACE}
+                            kubectl rollout restart deployment/circleguard-auth      -n ${K8S_NAMESPACE}
+                            kubectl rollout restart deployment/circleguard-gateway   -n ${K8S_NAMESPACE}
+                            kubectl rollout restart deployment/circleguard-promotion -n ${K8S_NAMESPACE}
+                            kubectl rollout restart deployment/circleguard-dashboard -n ${K8S_NAMESPACE}
+                            kubectl rollout restart deployment/circleguard-file      -n ${K8S_NAMESPACE}
+                        """
+                    }
                 }
             }
         }
