@@ -7,12 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
-import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpEntity;
@@ -32,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -40,18 +35,6 @@ import static org.mockito.Mockito.when;
 @Testcontainers
 @ActiveProfiles("test")
 class PromotionStatusIntegrationTest {
-
-    @TestConfiguration
-    static class TestConfig {
-        @Bean @Primary
-        public org.springframework.transaction.PlatformTransactionManager transactionManager() {
-            return Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class);
-        }
-        @Bean(name = "neo4jTransactionManager")
-        public org.springframework.transaction.PlatformTransactionManager neo4jTransactionManager() {
-            return Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class);
-        }
-    }
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16")
