@@ -85,9 +85,6 @@ class PromotionStatusIntegrationTest {
     @MockBean
     private KafkaTemplate<String, Object> kafkaTemplate;
 
-    @MockBean
-    private org.springframework.cache.CacheManager cacheManager;
-
     private static final String JWT_SECRET = "my-super-secret-dev-key-32-chars-long-12345678";
 
     private String buildTestToken(String authority) {
@@ -100,6 +97,7 @@ class PromotionStatusIntegrationTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void reportStatus_withHealthCenterPermission_returns204() {
         ValueOperations<String, String> valueOps = Mockito.mock(ValueOperations.class);
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
