@@ -28,7 +28,7 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -f services/circleguard-file-service/Dockerfile -t ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} .'
+                sh 'docker build --network=host -f services/circleguard-file-service/Dockerfile -t ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} .'
             }
         }
 
