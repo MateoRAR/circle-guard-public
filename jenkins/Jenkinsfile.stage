@@ -113,10 +113,31 @@ pipeline {
                     withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
                         sh "kubectl apply -k k8s/overlays/stage/"
                         sh """
-                            kubectl patch secret circleguard-auth-secret     -n ${K8S_NAMESPACE} -p '{"stringData":{"JWT_SECRET":"'\$JWT_SECRET'","QR_SECRET":"'\$QR_SECRET'"}}'
-                            kubectl patch secret circleguard-identity-secret  -n ${K8S_NAMESPACE} -p '{"stringData":{"JWT_SECRET":"'\$JWT_SECRET'","VAULT_SECRET":"'\$VAULT_SECRET'","VAULT_SALT":"'\$VAULT_SALT'","VAULT_HASH_SALT":"'\$VAULT_HASH_SALT'"}}'
-                            kubectl patch secret circleguard-promotion-secret -n ${K8S_NAMESPACE} -p '{"stringData":{"JWT_SECRET":"'\$JWT_SECRET'"}}'
-                            kubectl patch secret circleguard-gateway-secret   -n ${K8S_NAMESPACE} -p '{"stringData":{"JWT_SECRET":"'\$JWT_SECRET'","QR_SECRET":"'\$QR_SECRET'"}}'
+                            kubectl create secret generic circleguard-auth-secret \
+                                --from-literal=JWT_SECRET="\$JWT_SECRET" \
+                                --from-literal=QR_SECRET="\$QR_SECRET" \
+                                --from-literal=SPRING_DATASOURCE_PASSWORD=password \
+                                --from-literal=SPRING_LDAP_PASSWORD=admin \
+                                -n ${K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+
+                            kubectl create secret generic circleguard-identity-secret \
+                                --from-literal=JWT_SECRET="\$JWT_SECRET" \
+                                --from-literal=VAULT_SECRET="\$VAULT_SECRET" \
+                                --from-literal=VAULT_SALT="\$VAULT_SALT" \
+                                --from-literal=VAULT_HASH_SALT="\$VAULT_HASH_SALT" \
+                                --from-literal=SPRING_DATASOURCE_PASSWORD=password \
+                                -n ${K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+
+                            kubectl create secret generic circleguard-promotion-secret \
+                                --from-literal=JWT_SECRET="\$JWT_SECRET" \
+                                --from-literal=SPRING_DATASOURCE_PASSWORD=password \
+                                --from-literal=SPRING_NEO4J_AUTHENTICATION_PASSWORD=password \
+                                -n ${K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+
+                            kubectl create secret generic circleguard-gateway-secret \
+                                --from-literal=JWT_SECRET="\$JWT_SECRET" \
+                                --from-literal=QR_SECRET="\$QR_SECRET" \
+                                -n ${K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
                         """
                         sh """
                             kubectl rollout restart deployment/circleguard-identity  -n ${K8S_NAMESPACE}
