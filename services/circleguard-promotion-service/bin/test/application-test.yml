@@ -12,3 +12,6 @@ spring:
     authentication:
       username: neo4j
       password: password
+  kafka:
+    listener:
+      auto-startup: false

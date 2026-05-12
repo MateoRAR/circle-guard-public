@@ -30,7 +30,7 @@ pipeline {
         stage('Unit Test') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'jwt-secret', variable: 'JWT_SECRET')
+                    string(credentialsId: 'jwt-test-secret', variable: 'JWT_SECRET')
                 ]) {
                     sh './gradlew ${GRADLE_TARGET}:test'
                 }
