@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.neo4j.core.Neo4jClient;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -52,7 +53,7 @@ public class PromotionPerformanceTest {
     private HealthStatusService healthStatusService;
     
     @MockBean
-    private org.springframework.kafka.core.KafkaTemplate<String, Object> kafkaTemplate;
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     @MockBean
     private StringRedisTemplate redisTemplate;
