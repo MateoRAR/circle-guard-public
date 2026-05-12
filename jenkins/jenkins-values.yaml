@@ -121,11 +121,11 @@ controller:
         resources:
           requests:
             cpu: "500m"
-            memory: "512Mi"
+            memory: "1Gi"
 
           limits:
-            cpu: "1"
-            memory: "1Gi"
+            cpu: "2"
+            memory: "4Gi"
 
   JCasC:
     defaultConfig: true
@@ -143,12 +143,12 @@ controller:
 
   resources:
     requests:
-      cpu: "500m"
-      memory: "1Gi"
+      cpu: "1"
+      memory: "2Gi"
 
     limits:
-      cpu: "2"
-      memory: "3Gi"
+      cpu: "4"
+      memory: "6Gi"
 
   containerEnv:
     # Include Java path from JDK21 image + jenkins home bin for docker CLI
@@ -162,7 +162,7 @@ controller:
       value: "circleguard"
 
     - name: GRADLE_OPTS
-      value: "-Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
+      value: "-Dorg.gradle.daemon=false -Dorg.gradle.caching=true -Xmx512m"
 
     - name: DOCKER_HOST
       value: "tcp://localhost:2375"
