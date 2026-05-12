@@ -6,6 +6,7 @@ import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -52,8 +53,6 @@ class PromotionStatusIntegrationTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.flyway.enabled", () -> "true");
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "none");
         registry.add("spring.neo4j.uri", neo4j::getBoltUrl);
         registry.add("spring.neo4j.authentication.username", () -> "neo4j");
         registry.add("spring.neo4j.authentication.password", () -> "");
@@ -68,10 +67,11 @@ class PromotionStatusIntegrationTest {
     @MockBean
     private KafkaTemplate<String, Object> kafkaTemplate;
 
-    private static final String JWT_SECRET = "my-super-secret-dev-key-32-chars-long-12345678";
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
     private String buildTestToken(String authority) {
-        Key key = Keys.hmacShaKeyFor(JWT_SECRET.getBytes());
+        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
         return Jwts.builder()
                 .setSubject("health-user-001")
                 .claim("permissions", List.of(authority))
