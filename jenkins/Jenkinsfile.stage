@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY = '172.20.0.3:5000'
+        DOCKER_REGISTRY = 'kind-registry:5000'
         K8S_NAMESPACE   = 'circleguard-stage'
         BUILD_TAG       = "stage-${BUILD_NUMBER}"
         GRADLE_USER_HOME = '/var/jenkins_home/.gradle'
@@ -10,6 +10,13 @@ pipeline {
     }
 
     stages {
+
+        stage('Checkout') {
+            steps {
+                cleanWs()
+                checkout scm
+            }
+        }
 
         stage('Build') {
             parallel {
@@ -185,7 +192,32 @@ pipeline {
             echo 'Stage pipeline failed'
         }
         success {
-            echo 'All services deployed successfully to circleguard-stage'
+            echo '''
+=============================================================
+  CircleGuard — all services deployed to circleguard-stage
+=============================================================
+  SERVICE         PORT   ROLE
+  -------         ----   ----
+  auth            8180   JWT issuance, QR token generation
+  identity        8083   Encrypted PII vault (identity:lookup required)
+  gateway         8087   Physical gate QR validation
+  promotion       8088   Spatial graph, health status, mesh encounters
+  dashboard       8084   k-anonymity analytics for admins
+  file            8085   Health certificate upload/download
+
+  HOW TO ACCESS (stage)
+  ---------------------
+  kubectl port-forward -n circleguard-stage svc/circleguard-auth      8180:8180
+  kubectl port-forward -n circleguard-stage svc/circleguard-identity   8083:8083
+  kubectl port-forward -n circleguard-stage svc/circleguard-gateway    8087:8087
+  kubectl port-forward -n circleguard-stage svc/circleguard-promotion  8088:8088
+  kubectl port-forward -n circleguard-stage svc/circleguard-dashboard  8084:8084
+  kubectl port-forward -n circleguard-stage svc/circleguard-file       8085:8085
+
+  E2E test report: build/reports/tests/test/index.html
+  Load test report: locust-report-stage.html (archived artifact)
+=============================================================
+'''
         }
     }
 }

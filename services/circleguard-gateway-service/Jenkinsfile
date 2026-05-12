@@ -14,6 +14,13 @@ pipeline {
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                cleanWs()
+                checkout scm
+            }
+        }
+
         stage('Build') {
             steps {
                 sh './gradlew ${GRADLE_TARGET}:build -x test'
@@ -69,7 +76,30 @@ pipeline {
             echo 'Pipeline failed for circleguard-gateway-service'
         }
         success {
-            echo 'circleguard-gateway-service deployed successfully to circleguard-dev'
+            echo '''
+=============================================================
+  circleguard-gateway-service — deployed to circleguard-dev
+=============================================================
+  WHAT IT DOES
+  ------------
+  Physical gate validation service — the entry point for
+  QR code scans at building access points. Verifies the
+  signed QR token issued by the auth service, then signals
+  the promotion service to record the circle entry/exit event.
+  Coordinates with Redis for rate-limiting scan attempts.
+
+  KEY ENDPOINTS
+  -------------
+  POST /api/v1/gate/validate           — validate a QR token scan
+  GET  /api/v1/gate/status/{pointId}   — check gate/access-point status
+
+  HOW TO ACCESS (dev)
+  -------------------
+  kubectl port-forward -n circleguard-dev svc/circleguard-gateway 8087:8087
+  → http://localhost:8087/swagger-ui.html
+  → POST http://localhost:8087/api/v1/gate/validate  body: {"token":"<qr-token>"}
+=============================================================
+'''
         }
     }
 }

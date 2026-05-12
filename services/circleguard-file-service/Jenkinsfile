@@ -14,6 +14,13 @@ pipeline {
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                cleanWs()
+                checkout scm
+            }
+        }
+
         stage('Build') {
             steps {
                 sh './gradlew ${GRADLE_TARGET}:build -x test'
@@ -64,7 +71,30 @@ pipeline {
             echo 'Pipeline failed for circleguard-file-service'
         }
         success {
-            echo 'circleguard-file-service deployed successfully to circleguard-dev'
+            echo '''
+=============================================================
+  circleguard-file-service — deployed to circleguard-dev
+=============================================================
+  WHAT IT DOES
+  ------------
+  Handles multipart file uploads and serves stored files.
+  Used by the form service to attach health certificates,
+  PCR results, and other documents to health surveys.
+  Files are stored on a persistent volume inside the cluster.
+
+  KEY ENDPOINTS
+  -------------
+  POST   /api/v1/files/upload     — upload a file (multipart/form-data)
+  GET    /api/v1/files/{fileId}   — download a stored file
+  DELETE /api/v1/files/{fileId}   — delete a file
+
+  HOW TO ACCESS (dev)
+  -------------------
+  kubectl port-forward -n circleguard-dev svc/circleguard-file 8085:8085
+  → http://localhost:8085/swagger-ui.html
+  → curl -F "file=@cert.pdf" http://localhost:8085/api/v1/files/upload
+=============================================================
+'''
         }
     }
 }

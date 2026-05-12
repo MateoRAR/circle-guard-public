@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY  = '172.20.0.3:5000'
+        DOCKER_REGISTRY  = 'kind-registry:5000'
         STAGE_NAMESPACE  = 'circleguard-stage'
         PROD_NAMESPACE   = 'circleguard-prod'
         BUILD_TAG        = "prod-${BUILD_NUMBER}"
@@ -11,6 +11,13 @@ pipeline {
     }
 
     stages {
+
+        stage('Checkout') {
+            steps {
+                cleanWs()
+                checkout scm
+            }
+        }
 
         stage('Build') {
             parallel {
@@ -191,7 +198,31 @@ pipeline {
             echo 'Production pipeline failed'
         }
         success {
-            echo 'All services deployed successfully to circleguard-prod'
+            echo '''
+=============================================================
+  CircleGuard — all services deployed to circleguard-prod
+=============================================================
+  SERVICE         PORT   ROLE
+  -------         ----   ----
+  auth            8180   JWT issuance, QR token generation
+  identity        8083   Encrypted PII vault (identity:lookup required)
+  gateway         8087   Physical gate QR validation
+  promotion       8088   Spatial graph, health status, mesh encounters
+  dashboard       8084   k-anonymity analytics for admins
+  file            8085   Health certificate upload/download
+
+  HOW TO ACCESS (prod)
+  --------------------
+  kubectl port-forward -n circleguard-prod svc/circleguard-auth      8180:8180
+  kubectl port-forward -n circleguard-prod svc/circleguard-identity   8083:8083
+  kubectl port-forward -n circleguard-prod svc/circleguard-gateway    8087:8087
+  kubectl port-forward -n circleguard-prod svc/circleguard-promotion  8088:8088
+  kubectl port-forward -n circleguard-prod svc/circleguard-dashboard  8084:8084
+  kubectl port-forward -n circleguard-prod svc/circleguard-file       8085:8085
+
+  Release notes archived as: RELEASE_NOTES.md
+=============================================================
+'''
         }
     }
 }

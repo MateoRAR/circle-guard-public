@@ -78,7 +78,32 @@ pipeline {
             echo 'Pipeline failed for circleguard-identity-service'
         }
         success {
-            echo 'circleguard-identity-service deployed successfully to circleguard-dev'
+            echo '''
+=============================================================
+  circleguard-identity-service — deployed to circleguard-dev
+=============================================================
+  WHAT IT DOES
+  ------------
+  Privacy-preserving identity vault. Stores PII (name, email,
+  document) encrypted at rest with AES-256 + per-field HMAC.
+  Links anonymous participant UUIDs to real identities;
+  lookups require the identity:lookup permission in the JWT.
+  Audit events are emitted to Kafka on every access attempt.
+
+  KEY ENDPOINTS
+  -------------
+  POST /api/v1/identities              — register an identity (returns UUID)
+  GET  /api/v1/identities/{id}         — decrypt & return PII (identity:lookup)
+  GET  /api/v1/identities/visitor      — create anonymous visitor token (public)
+  GET  /api/v1/identities/map          — list UUID→alias mappings (public)
+
+  HOW TO ACCESS (dev)
+  -------------------
+  kubectl port-forward -n circleguard-dev svc/circleguard-identity 8083:8083
+  → http://localhost:8083/swagger-ui.html
+  → http://localhost:8083/api/v1/identities/visitor
+=============================================================
+'''
         }
     }
 }   

@@ -14,6 +14,13 @@ pipeline {
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                cleanWs()
+                checkout scm
+            }
+        }
+
         stage('Build') {
             steps {
                 sh './gradlew ${GRADLE_TARGET}:build -x test'
@@ -72,7 +79,32 @@ pipeline {
             echo 'Pipeline failed for circleguard-auth-service'
         }
         success {
-            echo 'circleguard-auth-service deployed successfully to circleguard-dev'
+            echo '''
+=============================================================
+  circleguard-auth-service — deployed to circleguard-dev
+=============================================================
+  WHAT IT DOES
+  ------------
+  Authenticates users and issues signed JWT tokens with
+  role-based permissions (ADMIN, GUARD, USER).
+  Also generates short-lived QR tokens used by the gateway
+  service to validate physical entry/exit events.
+
+  KEY ENDPOINTS
+  -------------
+  POST /api/v1/auth/login          — username+password → JWT
+  POST /api/v1/auth/refresh        — rotate access token
+  POST /api/v1/auth/qr-token       — generate gate QR token
+  GET  /api/v1/users               — list users (ADMIN only)
+  POST /api/v1/users               — create user (ADMIN only)
+
+  HOW TO ACCESS (dev)
+  -------------------
+  kubectl port-forward -n circleguard-dev svc/circleguard-auth 8180:8180
+  → http://localhost:8180/swagger-ui.html
+  → http://localhost:8180/api/v1/auth/login
+=============================================================
+'''
         }
     }
 }

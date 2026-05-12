@@ -14,6 +14,13 @@ pipeline {
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                cleanWs()
+                checkout scm
+            }
+        }
+
         stage('Build') {
             steps {
                 sh './gradlew ${GRADLE_TARGET}:build -x test'
@@ -64,7 +71,31 @@ pipeline {
             echo 'Pipeline failed for circleguard-dashboard-service'
         }
         success {
-            echo 'circleguard-dashboard-service deployed successfully to circleguard-dev'
+            echo '''
+=============================================================
+  circleguard-dashboard-service — deployed to circleguard-dev
+=============================================================
+  WHAT IT DOES
+  ------------
+  Exposes aggregated health-exposure analytics for admins.
+  Applies a k-anonymity filter before surfacing any metric,
+  so individual records are never revealed. Consumes spatial
+  and health-status data from the promotion service.
+
+  KEY ENDPOINTS
+  -------------
+  GET /api/v1/analytics/exposure        — exposure summary
+  GET /api/v1/analytics/circles         — per-circle stats
+  GET /api/v1/analytics/buildings       — per-building stats
+  GET /api/v1/analytics/timeline        — daily trend data
+
+  HOW TO ACCESS (dev)
+  -------------------
+  kubectl port-forward -n circleguard-dev svc/circleguard-dashboard 8084:8084
+  → http://localhost:8084/swagger-ui.html
+  → http://localhost:8084/api/v1/analytics/exposure
+=============================================================
+'''
         }
     }
 }
