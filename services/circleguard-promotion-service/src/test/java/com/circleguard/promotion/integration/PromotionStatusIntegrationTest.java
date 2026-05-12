@@ -83,8 +83,7 @@ class PromotionStatusIntegrationTest {
     private StringRedisTemplate redisTemplate;
 
     @MockBean
-    @SuppressWarnings("rawtypes")
-    private KafkaTemplate kafkaTemplate;
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     @MockBean
     private org.springframework.cache.CacheManager cacheManager;
