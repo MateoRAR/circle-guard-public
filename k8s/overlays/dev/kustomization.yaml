@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: circleguard-dev
+
+resources:
+  - ../../infra
+  - ../../services
+
+# Images already tagged :dev in the base manifests — no transform needed for dev.
+# Stage and prod overlays override these tags.

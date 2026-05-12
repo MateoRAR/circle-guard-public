@@ -138,6 +138,7 @@ pipeline {
         stage('Deploy Prod') {
             steps {
                 withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
+                    sh "kubectl apply -k k8s/overlays/prod/"
                     sh """
                         kubectl rollout restart deployment/circleguard-identity  -n ${PROD_NAMESPACE}
                         kubectl rollout restart deployment/circleguard-auth      -n ${PROD_NAMESPACE}

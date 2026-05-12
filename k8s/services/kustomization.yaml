@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - circleguard-auth/configmap.yaml
+  - circleguard-auth/secret.yaml
+  - circleguard-auth/deployment.yaml
+  - circleguard-auth/service.yaml
+  - circleguard-dashboard/configmap.yaml
+  - circleguard-dashboard/secret.yaml
+  - circleguard-dashboard/deployment.yaml
+  - circleguard-dashboard/service.yaml
+  - circleguard-file/configmap.yaml
+  - circleguard-file/deployment.yaml
+  - circleguard-file/service.yaml
+  - circleguard-gateway/configmap.yaml
+  - circleguard-gateway/secret.yaml
+  - circleguard-gateway/deployment.yaml
+  - circleguard-gateway/service.yaml
+  - circleguard-identity/configmap.yaml
+  - circleguard-identity/secret.yaml
+  - circleguard-identity/deployment.yaml
+  - circleguard-identity/service.yaml
+  - circleguard-promotion/configmap.yaml
+  - circleguard-promotion/secret.yaml
+  - circleguard-promotion/deployment.yaml
+  - circleguard-promotion/service.yaml

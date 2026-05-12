@@ -55,7 +55,7 @@ pipeline {
         stage('Deploy Dev') {
             steps {
                 withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
-                    sh 'kubectl apply -f ${K8S_DIR}/ -n ${K8S_NAMESPACE}'
+                    sh 'kubectl apply -k ${K8S_DIR}/ -n ${K8S_NAMESPACE}'
                     sh 'kubectl rollout restart deployment/${DEPLOYMENT_NAME} -n ${K8S_NAMESPACE}'
                 }
             }

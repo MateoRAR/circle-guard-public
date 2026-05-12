@@ -104,14 +104,8 @@ pipeline {
         stage('Deploy Stage') {
             steps {
                 withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
+                    sh "kubectl apply -k k8s/overlays/stage/"
                     sh """
-                        kubectl apply -f k8s/services-stage/circleguard-identity/  -n ${K8S_NAMESPACE}
-                        kubectl apply -f k8s/services-stage/circleguard-auth/      -n ${K8S_NAMESPACE}
-                        kubectl apply -f k8s/services-stage/circleguard-gateway/   -n ${K8S_NAMESPACE}
-                        kubectl apply -f k8s/services-stage/circleguard-promotion/ -n ${K8S_NAMESPACE}
-                        kubectl apply -f k8s/services-stage/circleguard-dashboard/ -n ${K8S_NAMESPACE}
-                        kubectl apply -f k8s/services-stage/circleguard-file/      -n ${K8S_NAMESPACE}
-
                         kubectl rollout restart deployment/circleguard-identity  -n ${K8S_NAMESPACE}
                         kubectl rollout restart deployment/circleguard-auth      -n ${K8S_NAMESPACE}
                         kubectl rollout restart deployment/circleguard-gateway   -n ${K8S_NAMESPACE}
