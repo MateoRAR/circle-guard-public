@@ -73,6 +73,11 @@ controller:
               chmod +x /var/jenkins_home/bin/docker
             fi
 
+  hostAliases:
+    - ip: "172.20.0.3"
+      hostnames:
+        - "kind-registry"
+
   additionalVolumes: []
   additionalVolumeMounts: []
 
@@ -88,7 +93,7 @@ controller:
           - "--host=tcp://0.0.0.0:2375"
           - "--iptables=false"
           - "--storage-driver=overlay2"
-          - "--insecure-registry=172.20.0.3:5000"
+          - "--insecure-registry=kind-registry:5000"
 
         securityContext:
           privileged: true

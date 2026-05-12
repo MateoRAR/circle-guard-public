@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY  = 'localhost:5000'
+        DOCKER_REGISTRY  = 'kind-registry:5000'
         IMAGE_NAME       = 'circleguard/promotion-service'
         IMAGE_TAG        = 'dev'
         DEPLOYMENT_NAME  = 'circleguard-promotion'
