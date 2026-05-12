@@ -17,6 +17,7 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
-    val baseUrl = System.getProperty("base.url", "http://localhost")
-    systemProperty("base.url", baseUrl)
+    systemProperty("base.url",    System.getProperty("base.url",    "http://localhost"))
+    systemProperty("JWT_SECRET",  System.getProperty("JWT_SECRET",  ""))
+    systemProperty("QR_SECRET",   System.getProperty("QR_SECRET",   ""))
 }
