@@ -135,23 +135,21 @@ pipeline {
         stage('E2E Tests') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'jwt-secret', variable: 'JWT_SECRET')
+                    string(credentialsId: 'jwt-secret', variable: 'JWT_SECRET'),
+                    string(credentialsId: 'qr-secret',  variable: 'QR_SECRET')
                 ]) {
                     withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
-                        sh '''
+                        sh """
                             kubectl port-forward -n circleguard-stage svc/circleguard-auth      18180:8180 &
                             kubectl port-forward -n circleguard-stage svc/circleguard-gateway   18087:8087 &
                             kubectl port-forward -n circleguard-stage svc/circleguard-identity  18083:8083 &
                             kubectl port-forward -n circleguard-stage svc/circleguard-promotion 18088:8088 &
                             kubectl port-forward -n circleguard-stage svc/circleguard-dashboard 18084:8084 &
                             kubectl port-forward -n circleguard-stage svc/circleguard-file      18085:8085 &
-                            sleep 8
-                            ./gradlew :e2e:test \
-                                -Dbase.url=http://localhost:18180 \
-                                -DJWT_SECRET=$JWT_SECRET \
-                                --no-daemon || { pkill -f "kubectl port-forward" || true; exit 1; }
+                            sleep 15
+                            ./gradlew :e2e:test -Dbase.url=http://localhost:18180 "-DJWT_SECRET=\$JWT_SECRET" "-DQR_SECRET=\$QR_SECRET" --no-daemon || { pkill -f "kubectl port-forward" || true; exit 1; }
                             pkill -f "kubectl port-forward" || true
-                        '''
+                        """
                     }
                 }
             }

@@ -15,12 +15,14 @@ import java.util.Map;
 public abstract class BaseE2ETest {
 
     protected static String BASE_URL;
-    protected static final String JWT_SECRET = "my-super-secret-dev-key-32-chars-long-12345678";
-    protected static final String QR_SECRET  = "my-qr-secret-key-for-dev-1234567890";
+    protected static String JWT_SECRET;
+    protected static String QR_SECRET;
 
     @BeforeAll
     static void setUpBase() {
-        BASE_URL = System.getProperty("base.url", "http://localhost");
+        BASE_URL   = System.getProperty("base.url");
+        JWT_SECRET = System.getProperty("JWT_SECRET");
+        QR_SECRET  = System.getProperty("QR_SECRET");
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
 
