@@ -1,0 +1,191 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_REGISTRY = '172.20.0.3:5000'
+        K8S_NAMESPACE   = 'circleguard-stage'
+        BUILD_TAG       = "stage-${BUILD_NUMBER}"
+        GRADLE_USER_HOME = '/var/jenkins_home/.gradle'
+        PATH             = "/var/jenkins_home/bin:${env.PATH}"
+    }
+
+    stages {
+
+        stage('Build') {
+            parallel {
+                stage('auth')      { steps { sh './gradlew :services:circleguard-auth-service:build -x test --no-daemon' } }
+                stage('identity')  { steps { sh './gradlew :services:circleguard-identity-service:build -x test --no-daemon' } }
+                stage('gateway')   { steps { sh './gradlew :services:circleguard-gateway-service:build -x test --no-daemon' } }
+                stage('promotion') { steps { sh './gradlew :services:circleguard-promotion-service:build -x test --no-daemon' } }
+                stage('dashboard') { steps { sh './gradlew :services:circleguard-dashboard-service:build -x test --no-daemon' } }
+                stage('file')      { steps { sh './gradlew :services:circleguard-file-service:build -x test --no-daemon' } }
+            }
+        }
+
+        stage('Unit Tests') {
+            parallel {
+                stage('auth') {
+                    steps {
+                        withCredentials([
+                            string(credentialsId: 'jwt-secret',      variable: 'JWT_SECRET'),
+                            string(credentialsId: 'qr-secret',       variable: 'QR_SECRET'),
+                            string(credentialsId: 'vault-secret',    variable: 'VAULT_SECRET'),
+                            string(credentialsId: 'vault-salt',      variable: 'VAULT_SALT'),
+                            string(credentialsId: 'vault-hash-salt', variable: 'VAULT_HASH_SALT')
+                        ]) {
+                            sh './gradlew :services:circleguard-auth-service:test --no-daemon'
+                        }
+                    }
+                }
+                stage('identity') {
+                    steps {
+                        withCredentials([
+                            string(credentialsId: 'jwt-secret',      variable: 'JWT_SECRET'),
+                            string(credentialsId: 'vault-secret',    variable: 'VAULT_SECRET'),
+                            string(credentialsId: 'vault-salt',      variable: 'VAULT_SALT'),
+                            string(credentialsId: 'vault-hash-salt', variable: 'VAULT_HASH_SALT')
+                        ]) {
+                            sh './gradlew :services:circleguard-identity-service:test --no-daemon'
+                        }
+                    }
+                }
+                stage('gateway') {
+                    steps {
+                        withCredentials([
+                            string(credentialsId: 'jwt-secret', variable: 'JWT_SECRET'),
+                            string(credentialsId: 'qr-secret',  variable: 'QR_SECRET')
+                        ]) {
+                            sh './gradlew :services:circleguard-gateway-service:test --no-daemon'
+                        }
+                    }
+                }
+                stage('promotion') {
+                    steps {
+                        withCredentials([
+                            string(credentialsId: 'jwt-secret', variable: 'JWT_SECRET')
+                        ]) {
+                            sh './gradlew :services:circleguard-promotion-service:test --no-daemon'
+                        }
+                    }
+                }
+                stage('dashboard') { steps { sh './gradlew :services:circleguard-dashboard-service:test --no-daemon' } }
+                stage('file')      { steps { sh './gradlew :services:circleguard-file-service:test --no-daemon' } }
+            }
+        }
+
+        stage('Docker Build & Push') {
+            steps {
+                script {
+                    def services = [
+                        'auth-service', 'identity-service', 'gateway-service',
+                        'promotion-service', 'dashboard-service', 'file-service'
+                    ]
+                    services.each { svc ->
+                        sh """
+                            docker build --network=host -f services/circleguard-${svc}/Dockerfile \
+                                -t ${DOCKER_REGISTRY}/circleguard/${svc}:${BUILD_TAG} \
+                                -t ${DOCKER_REGISTRY}/circleguard/${svc}:stage-latest \
+                                .
+                            docker push ${DOCKER_REGISTRY}/circleguard/${svc}:${BUILD_TAG}
+                            docker push ${DOCKER_REGISTRY}/circleguard/${svc}:stage-latest
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Stage') {
+            steps {
+                withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
+                    sh """
+                        kubectl apply -f k8s/services-stage/circleguard-identity/  -n ${K8S_NAMESPACE}
+                        kubectl apply -f k8s/services-stage/circleguard-auth/      -n ${K8S_NAMESPACE}
+                        kubectl apply -f k8s/services-stage/circleguard-gateway/   -n ${K8S_NAMESPACE}
+                        kubectl apply -f k8s/services-stage/circleguard-promotion/ -n ${K8S_NAMESPACE}
+                        kubectl apply -f k8s/services-stage/circleguard-dashboard/ -n ${K8S_NAMESPACE}
+                        kubectl apply -f k8s/services-stage/circleguard-file/      -n ${K8S_NAMESPACE}
+
+                        kubectl rollout restart deployment/circleguard-identity  -n ${K8S_NAMESPACE}
+                        kubectl rollout restart deployment/circleguard-auth      -n ${K8S_NAMESPACE}
+                        kubectl rollout restart deployment/circleguard-gateway   -n ${K8S_NAMESPACE}
+                        kubectl rollout restart deployment/circleguard-promotion -n ${K8S_NAMESPACE}
+                        kubectl rollout restart deployment/circleguard-dashboard -n ${K8S_NAMESPACE}
+                        kubectl rollout restart deployment/circleguard-file      -n ${K8S_NAMESPACE}
+                    """
+                }
+            }
+        }
+
+        stage('Verify Rollout') {
+            steps {
+                withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
+                    sh """
+                        kubectl rollout status deployment/circleguard-identity  -n ${K8S_NAMESPACE} --timeout=180s
+                        kubectl rollout status deployment/circleguard-auth      -n ${K8S_NAMESPACE} --timeout=180s
+                        kubectl rollout status deployment/circleguard-gateway   -n ${K8S_NAMESPACE} --timeout=180s
+                        kubectl rollout status deployment/circleguard-promotion -n ${K8S_NAMESPACE} --timeout=300s
+                        kubectl rollout status deployment/circleguard-dashboard -n ${K8S_NAMESPACE} --timeout=180s
+                        kubectl rollout status deployment/circleguard-file      -n ${K8S_NAMESPACE} --timeout=180s
+                    """
+                }
+            }
+        }
+
+        stage('E2E Tests') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'jwt-secret', variable: 'JWT_SECRET')
+                ]) {
+                    withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
+                        sh '''
+                            kubectl port-forward -n circleguard-stage svc/circleguard-auth      18180:8180 &
+                            kubectl port-forward -n circleguard-stage svc/circleguard-gateway   18087:8087 &
+                            kubectl port-forward -n circleguard-stage svc/circleguard-identity  18083:8083 &
+                            kubectl port-forward -n circleguard-stage svc/circleguard-promotion 18088:8088 &
+                            kubectl port-forward -n circleguard-stage svc/circleguard-dashboard 18084:8084 &
+                            kubectl port-forward -n circleguard-stage svc/circleguard-file      18085:8085 &
+                            sleep 8
+                            ./gradlew :e2e:test \
+                                -Dbase.url=http://localhost:18180 \
+                                -DJWT_SECRET=$JWT_SECRET \
+                                --no-daemon || { pkill -f "kubectl port-forward" || true; exit 1; }
+                            pkill -f "kubectl port-forward" || true
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Locust Load Test') {
+            steps {
+                withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
+                    sh '''
+                        kubectl port-forward -n circleguard-stage svc/circleguard-auth      18180:8180 &
+                        kubectl port-forward -n circleguard-stage svc/circleguard-gateway   18087:8087 &
+                        kubectl port-forward -n circleguard-stage svc/circleguard-promotion 18088:8088 &
+                        kubectl port-forward -n circleguard-stage svc/circleguard-dashboard 18084:8084 &
+                        sleep 8
+                        locust -f locust/locustfile.py AuthLoadTest \
+                            --host=http://localhost:18180 \
+                            --headless -u 50 -r 5 --run-time 2m \
+                            --html locust-report-stage.html
+                        pkill -f "kubectl port-forward" || true
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            junit allowEmptyResults: true, testResults: '**/build/test-results/**/*.xml'
+            archiveArtifacts artifacts: 'locust-report-stage.html', allowEmptyArchive: true
+        }
+        failure {
+            echo 'Stage pipeline failed'
+        }
+        success {
+            echo 'All services deployed successfully to circleguard-stage'
+        }
+    }
+}

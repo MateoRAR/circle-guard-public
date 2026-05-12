@@ -29,8 +29,13 @@ pipeline {
 
         stage('Unit Test') {
             steps {
-                withCredentials([string(credentialsId: 'jwt-test-secret', variable: 'JWT_SECRET')]) {
-                    sh './gradlew ${GRADLE_TARGET}:test -Djwt.secret="${JWT_SECRET}"'
+                withCredentials([
+                    string(credentialsId: 'jwt-secret',      variable: 'JWT_SECRET'),
+                    string(credentialsId: 'vault-secret',    variable: 'VAULT_SECRET'),
+                    string(credentialsId: 'vault-salt',      variable: 'VAULT_SALT'),
+                    string(credentialsId: 'vault-hash-salt', variable: 'VAULT_HASH_SALT')
+                ]) {
+                    sh './gradlew ${GRADLE_TARGET}:test'
                 }
             }
         }

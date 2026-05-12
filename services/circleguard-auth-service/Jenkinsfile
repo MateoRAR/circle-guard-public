@@ -22,7 +22,15 @@ pipeline {
 
         stage('Unit Test') {
             steps {
-                sh './gradlew ${GRADLE_TARGET}:test'
+                withCredentials([
+                    string(credentialsId: 'jwt-secret',      variable: 'JWT_SECRET'),
+                    string(credentialsId: 'qr-secret',       variable: 'QR_SECRET'),
+                    string(credentialsId: 'vault-secret',    variable: 'VAULT_SECRET'),
+                    string(credentialsId: 'vault-salt',      variable: 'VAULT_SALT'),
+                    string(credentialsId: 'vault-hash-salt', variable: 'VAULT_HASH_SALT')
+                ]) {
+                    sh './gradlew ${GRADLE_TARGET}:test'
+                }
             }
         }
 
