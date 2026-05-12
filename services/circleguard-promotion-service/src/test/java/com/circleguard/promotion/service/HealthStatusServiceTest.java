@@ -28,7 +28,10 @@ import com.circleguard.promotion.model.jpa.SystemSettings;
 import com.circleguard.promotion.repository.jpa.SystemSettingsRepository;
 import java.util.Optional;
 
-@SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
+@SpringBootTest(properties = {
+        "spring.main.allow-bean-definition-overriding=true",
+        "spring.flyway.enabled=false"
+})
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 class HealthStatusServiceTest {
