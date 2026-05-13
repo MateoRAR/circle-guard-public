@@ -78,22 +78,27 @@ public class IdentityVaultController {
     }
 
     private void emitAuditEvent(UUID anonymousId, String user, String status) {
-        IdentityAccessEvent event = IdentityAccessEvent.builder()
-                .eventId(UUID.randomUUID().toString())
-                .eventType("audit.identity.accessed")
-                .timestamp(Instant.now())
-                .source("circleguard-identity-service")
-                .payload(IdentityAccessEvent.IdentityAccessPayload.builder()
-                        .anonymousId(anonymousId)
-                        .requestingUser(user)
-                        .accessStatus(status)
-                        .build())
-                .metadata(IdentityAccessEvent.IdentityAccessMetadata.builder()
-                        .correlationId(UUID.randomUUID().toString())
-                        .version(1)
-                        .build())
-                .build();
+        try {
+            IdentityAccessEvent event = IdentityAccessEvent.builder()
+                    .eventId(UUID.randomUUID().toString())
+                    .eventType("audit.identity.accessed")
+                    .timestamp(Instant.now())
+                    .source("circleguard-identity-service")
+                    .payload(IdentityAccessEvent.IdentityAccessPayload.builder()
+                            .anonymousId(anonymousId)
+                            .requestingUser(user)
+                            .accessStatus(status)
+                            .build())
+                    .metadata(IdentityAccessEvent.IdentityAccessMetadata.builder()
+                            .correlationId(UUID.randomUUID().toString())
+                            .version(1)
+                            .build())
+                    .build();
 
-        kafkaTemplate.send("audit.identity.accessed", event);
+            kafkaTemplate.send("audit.identity.accessed", event);
+        } catch (Exception e) {
+            System.err.printf("Audit event emit failed for anonymousId=%s user=%s status=%s: %s%n",
+                    anonymousId, user, status, e.getMessage());
+        }
     }
 }
