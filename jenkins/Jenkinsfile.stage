@@ -192,6 +192,10 @@ pipeline {
 
         stage('Locust Load Test') {
             steps {
+                // Relax Jenkins CSP so the Locust HTML report's inline scripts render correctly
+                script {
+                    System.setProperty('hudson.model.DirectoryBrowserSupport.CSP', '')
+                }
                 withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
                     sh '''
                         kubectl port-forward -n circleguard-stage svc/circleguard-auth      18180:8180 &
@@ -206,6 +210,15 @@ pipeline {
                         pkill -f "kubectl port-forward" || true
                     '''
                 }
+                publishHTML([
+                    allowMissing:          false,
+                    alwaysLinkToLastBuild: false,
+                    keepAll:               true,
+                    reportDir:             '.',
+                    reportFiles:           'locust-report-stage.html',
+                    reportName:            'Locust Load Test Report',
+                    reportTitles:          'Locust — Stage'
+                ])
             }
         }
     }
@@ -213,7 +226,16 @@ pipeline {
     post {
         always {
             junit allowEmptyResults: true, testResults: '**/build/test-results/**/*.xml'
-            archiveArtifacts artifacts: 'locust-report-stage.html', allowEmptyArchive: true
+            publishHTML([
+                allowMissing:          true,
+                alwaysLinkToLastBuild: false,
+                keepAll:               true,
+                reportDir:             'e2e/build/reports/tests/test',
+                reportFiles:           'index.html',
+                reportName:            'E2E Test Report',
+                reportTitles:          'E2E Tests — Stage'
+            ])
+            archiveArtifacts artifacts: 'locust-report-stage.html, e2e/build/reports/tests/test/**/*', allowEmptyArchive: true
         }
         failure {
             echo 'Stage pipeline failed'
