@@ -145,6 +145,11 @@ controller:
             cpu: "2"
             memory: "4Gi"
 
+  initScripts:
+    relax-csp: |
+      // Allow inline scripts in archived HTML reports (Locust, test reports)
+      System.setProperty("hudson.model.DirectoryBrowserSupport.CSP", "")
+
   JCasC:
     defaultConfig: true
 

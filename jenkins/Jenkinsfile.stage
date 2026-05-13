@@ -192,10 +192,6 @@ pipeline {
 
         stage('Locust Load Test') {
             steps {
-                // Relax Jenkins CSP so Locust HTML reports' inline scripts render correctly
-                script {
-                    System.setProperty('hudson.model.DirectoryBrowserSupport.CSP', '')
-                }
                 withCredentials([
                     string(credentialsId: 'jwt-secret', variable: 'JWT_SECRET'),
                     string(credentialsId: 'qr-secret',  variable: 'QR_SECRET')
