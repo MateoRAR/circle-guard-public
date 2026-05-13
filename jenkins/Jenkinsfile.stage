@@ -308,8 +308,10 @@ pipeline {
   kubectl port-forward -n circleguard-stage svc/circleguard-dashboard  8084:8084
   kubectl port-forward -n circleguard-stage svc/circleguard-file       8085:8085
 
-  E2E test report: build/reports/tests/test/index.html
-  Load test report: locust-report-stage.html (archived artifact)
+  ARTIFACTS
+  ---------
+  E2E test report   → Jenkins: "E2E Test Report" (sidebar)
+  Load test reports → Jenkins: Locust Auth / Gateway / Promotion / Dashboard (sidebar)
 =============================================================
 '''
         }

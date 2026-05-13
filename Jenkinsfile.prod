@@ -107,23 +107,21 @@ pipeline {
         stage('System Tests contra Stage') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'jwt-secret', variable: 'JWT_SECRET')
+                    string(credentialsId: 'jwt-secret', variable: 'JWT_SECRET'),
+                    string(credentialsId: 'qr-secret',  variable: 'QR_SECRET')
                 ]) {
                     withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
-                        sh '''
-                            kubectl port-forward -n circleguard-stage svc/circleguard-auth      18180:8180 &
-                            kubectl port-forward -n circleguard-stage svc/circleguard-gateway   18087:8087 &
-                            kubectl port-forward -n circleguard-stage svc/circleguard-identity  18083:8083 &
-                            kubectl port-forward -n circleguard-stage svc/circleguard-promotion 18088:8088 &
-                            kubectl port-forward -n circleguard-stage svc/circleguard-dashboard 18084:8084 &
-                            kubectl port-forward -n circleguard-stage svc/circleguard-file      18085:8085 &
-                            sleep 8
-                            ./gradlew :e2e:test \
-                                -Dbase.url=http://localhost:18180 \
-                                -DJWT_SECRET=$JWT_SECRET \
-                                --no-daemon || { pkill -f "kubectl port-forward" || true; exit 1; }
+                        sh """
+                            kubectl port-forward -n circleguard-stage svc/circleguard-auth      8180:8180 &
+                            kubectl port-forward -n circleguard-stage svc/circleguard-gateway   8087:8087 &
+                            kubectl port-forward -n circleguard-stage svc/circleguard-identity  8083:8083 &
+                            kubectl port-forward -n circleguard-stage svc/circleguard-promotion 8088:8088 &
+                            kubectl port-forward -n circleguard-stage svc/circleguard-dashboard 8084:8084 &
+                            kubectl port-forward -n circleguard-stage svc/circleguard-file      8085:8085 &
+                            sleep 15
+                            ./gradlew :e2e:test -Dbase.url=http://localhost "-DJWT_SECRET=\$JWT_SECRET" "-DQR_SECRET=\$QR_SECRET" --no-daemon || { pkill -f "kubectl port-forward" || true; exit 1; }
                             pkill -f "kubectl port-forward" || true
-                        '''
+                        """
                     }
                 }
             }
@@ -137,16 +135,51 @@ pipeline {
 
         stage('Deploy Prod') {
             steps {
-                withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
-                    sh "kubectl apply -k k8s/overlays/prod/"
-                    sh """
-                        kubectl rollout restart deployment/circleguard-identity  -n ${PROD_NAMESPACE}
-                        kubectl rollout restart deployment/circleguard-auth      -n ${PROD_NAMESPACE}
-                        kubectl rollout restart deployment/circleguard-gateway   -n ${PROD_NAMESPACE}
-                        kubectl rollout restart deployment/circleguard-promotion -n ${PROD_NAMESPACE}
-                        kubectl rollout restart deployment/circleguard-dashboard -n ${PROD_NAMESPACE}
-                        kubectl rollout restart deployment/circleguard-file      -n ${PROD_NAMESPACE}
-                    """
+                withCredentials([
+                    string(credentialsId: 'jwt-secret',      variable: 'JWT_SECRET'),
+                    string(credentialsId: 'qr-secret',       variable: 'QR_SECRET'),
+                    string(credentialsId: 'vault-secret',    variable: 'VAULT_SECRET'),
+                    string(credentialsId: 'vault-salt',      variable: 'VAULT_SALT'),
+                    string(credentialsId: 'vault-hash-salt', variable: 'VAULT_HASH_SALT')
+                ]) {
+                    withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
+                        sh "kubectl apply -k k8s/overlays/prod/"
+                        sh """
+                            kubectl create secret generic circleguard-auth-secret \
+                                --from-literal=JWT_SECRET="\$JWT_SECRET" \
+                                --from-literal=QR_SECRET="\$QR_SECRET" \
+                                --from-literal=SPRING_DATASOURCE_PASSWORD=password \
+                                --from-literal=SPRING_LDAP_PASSWORD=admin \
+                                -n ${PROD_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+
+                            kubectl create secret generic circleguard-identity-secret \
+                                --from-literal=JWT_SECRET="\$JWT_SECRET" \
+                                --from-literal=VAULT_SECRET="\$VAULT_SECRET" \
+                                --from-literal=VAULT_SALT="\$VAULT_SALT" \
+                                --from-literal=VAULT_HASH_SALT="\$VAULT_HASH_SALT" \
+                                --from-literal=SPRING_DATASOURCE_PASSWORD=password \
+                                -n ${PROD_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+
+                            kubectl create secret generic circleguard-promotion-secret \
+                                --from-literal=JWT_SECRET="\$JWT_SECRET" \
+                                --from-literal=SPRING_DATASOURCE_PASSWORD=password \
+                                --from-literal=SPRING_NEO4J_AUTHENTICATION_PASSWORD=password \
+                                -n ${PROD_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+
+                            kubectl create secret generic circleguard-gateway-secret \
+                                --from-literal=JWT_SECRET="\$JWT_SECRET" \
+                                --from-literal=QR_SECRET="\$QR_SECRET" \
+                                -n ${PROD_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+                        """
+                        sh """
+                            kubectl rollout restart deployment/circleguard-identity  -n ${PROD_NAMESPACE}
+                            kubectl rollout restart deployment/circleguard-auth      -n ${PROD_NAMESPACE}
+                            kubectl rollout restart deployment/circleguard-gateway   -n ${PROD_NAMESPACE}
+                            kubectl rollout restart deployment/circleguard-promotion -n ${PROD_NAMESPACE}
+                            kubectl rollout restart deployment/circleguard-dashboard -n ${PROD_NAMESPACE}
+                            kubectl rollout restart deployment/circleguard-file      -n ${PROD_NAMESPACE}
+                        """
+                    }
                 }
             }
         }
@@ -194,6 +227,16 @@ pipeline {
     post {
         always {
             junit allowEmptyResults: true, testResults: '**/build/test-results/**/*.xml'
+            publishHTML([
+                allowMissing:          true,
+                alwaysLinkToLastBuild: false,
+                keepAll:               true,
+                reportDir:             'e2e/build/reports/tests/test',
+                reportFiles:           'index.html',
+                reportName:            'E2E Test Report',
+                reportTitles:          'E2E Tests — Prod'
+            ])
+            archiveArtifacts artifacts: 'e2e/build/reports/tests/test/**/*', allowEmptyArchive: true
         }
         failure {
             echo 'Production pipeline failed'
@@ -221,7 +264,10 @@ pipeline {
   kubectl port-forward -n circleguard-prod svc/circleguard-dashboard  8084:8084
   kubectl port-forward -n circleguard-prod svc/circleguard-file       8085:8085
 
-  Release notes archived as: RELEASE_NOTES.md
+  ARTIFACTS
+  ---------
+  E2E system test report → Jenkins: "E2E Test Report" (sidebar)
+  Release notes          → RELEASE_NOTES.md (archived artifact)
 =============================================================
 '''
         }
