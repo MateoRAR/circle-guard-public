@@ -73,11 +73,6 @@ controller:
               chmod +x /var/jenkins_home/bin/docker
             fi
 
-            if [ ! -f /var/jenkins_home/bin/locust ]; then
-              apt-get install -y python3-pip -q
-              pip3 install locust --break-system-packages -q
-              ln -sf "$(command -v locust)" /var/jenkins_home/bin/locust
-            fi
 
   hostAliases:
     - ip: "172.20.0.3"
