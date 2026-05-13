@@ -193,23 +193,18 @@ pipeline {
         stage('Locust Load Test') {
             steps {
                 withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
-                    sh """
+                    sh '''
                         kubectl port-forward -n circleguard-stage svc/circleguard-auth      18180:8180 &
                         kubectl port-forward -n circleguard-stage svc/circleguard-gateway   18087:8087 &
                         kubectl port-forward -n circleguard-stage svc/circleguard-promotion 18088:8088 &
                         kubectl port-forward -n circleguard-stage svc/circleguard-dashboard 18084:8084 &
                         sleep 8
-                        docker run --rm \
-                            --network=host \
-                            --volume "${WORKSPACE}/locust:/locust" \
-                            locustio/locust \
-                            -f /locust/locustfile.py AuthLoadTest \
+                        locust -f locust/locustfile.py AuthLoadTest \
                             --host=http://localhost:18180 \
                             --headless -u 50 -r 5 --run-time 2m \
-                            --html /locust/locust-report-stage.html
-                        cp "${WORKSPACE}/locust/locust-report-stage.html" "${WORKSPACE}/locust-report-stage.html"
+                            --html locust-report-stage.html
                         pkill -f "kubectl port-forward" || true
-                    """
+                    '''
                 }
             }
         }

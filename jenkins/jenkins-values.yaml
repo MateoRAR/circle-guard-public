@@ -74,6 +74,24 @@ controller:
             fi
 
 
+  initContainers:
+    - name: locust-installer
+      image: python:3.10-slim
+      securityContext:
+        runAsUser: 0
+      command:
+        - /bin/sh
+        - -c
+        - |
+          if [ ! -f /var/jenkins_home/bin/locust ]; then
+            pip install locust pyjwt --target=/var/jenkins_home/locust-packages -q
+            printf '#!/usr/bin/env python3\nimport sys\nsys.path.insert(0, "/var/jenkins_home/locust-packages")\nfrom locust.main import main\nmain()\n' > /var/jenkins_home/bin/locust
+            chmod +x /var/jenkins_home/bin/locust
+          fi
+      volumeMounts:
+        - name: jenkins-home
+          mountPath: /var/jenkins_home
+
   hostAliases:
     - ip: "172.20.0.3"
       hostnames:
