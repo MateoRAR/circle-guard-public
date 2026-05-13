@@ -64,7 +64,7 @@ controller:
           - /bin/sh
           - -c
           - |
-            mkdir -p /var/jenkins_home/bin
+            mkdir -p /var/jenkins_home/bin /var/jenkins_home/locust-packages
 
             if [ ! -f /var/jenkins_home/bin/docker ]; then
               curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.5.0.tgz \
@@ -73,24 +73,23 @@ controller:
               chmod +x /var/jenkins_home/bin/docker
             fi
 
+            if [ ! -f /var/jenkins_home/python/bin/python3 ]; then
+              mkdir -p /var/jenkins_home/python
+              curl -fsSL "https://github.com/astral-sh/python-build-standalone/releases/download/20260510/cpython-3.11.15%2B20260510-x86_64-unknown-linux-gnu-install_only.tar.gz" \
+                | tar -xz --strip-components=1 -C /var/jenkins_home/python 2>/dev/null || true
+            fi
 
-  initContainers:
-    - name: locust-installer
-      image: python:3.10-slim
-      securityContext:
-        runAsUser: 0
-      command:
-        - /bin/sh
-        - -c
-        - |
-          if [ ! -f /var/jenkins_home/bin/locust ]; then
-            pip install locust pyjwt --target=/var/jenkins_home/locust-packages -q
-            printf '#!/usr/bin/env python3\nimport sys\nsys.path.insert(0, "/var/jenkins_home/locust-packages")\nfrom locust.main import main\nmain()\n' > /var/jenkins_home/bin/locust
-            chmod +x /var/jenkins_home/bin/locust
-          fi
-      volumeMounts:
-        - name: jenkins-home
-          mountPath: /var/jenkins_home
+            if [ ! -f /var/jenkins_home/bin/locust ]; then
+              rm -f /var/jenkins_home/bin/locust
+              /var/jenkins_home/python/bin/pip3 install locust pyjwt \
+                --target=/var/jenkins_home/locust-packages -q 2>/dev/null || true
+              printf '#!/bin/sh\nPYTHONPATH=/var/jenkins_home/locust-packages exec /var/jenkins_home/python/bin/python3 -m locust "$@"\n' \
+                > /var/jenkins_home/bin/locust 2>/dev/null || true
+              chmod +x /var/jenkins_home/bin/locust 2>/dev/null || true
+            fi
+
+            true
+
 
   hostAliases:
     - ip: "172.20.0.3"
