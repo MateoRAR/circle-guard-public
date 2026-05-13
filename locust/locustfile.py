@@ -1,23 +1,12 @@
+import os
 import random
-import time
-from locust import HttpUser, task, between, events
-from locust.exception import StopUser
+import datetime
+from locust import HttpUser, task, between
 
 import jwt as pyjwt
-import datetime
 
-JWT_SECRET = "my-super-secret-dev-key-32-chars-long-12345678"
-QR_SECRET  = "my-qr-secret-key-for-dev-1234567890"
-
-
-def _build_token(subject: str, permissions: list[str], secret: str = JWT_SECRET) -> str:
-    payload = {
-        "sub": subject,
-        "permissions": permissions,
-        "iat": datetime.datetime.utcnow(),
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1),
-    }
-    return pyjwt.encode(payload, secret, algorithm="HS256")
+JWT_SECRET = os.environ["JWT_SECRET"]
+QR_SECRET  = os.environ["QR_SECRET"]
 
 
 # ---------------------------------------------------------------------------
@@ -79,13 +68,12 @@ class GatewayLoadTest(HttpUser):
     wait_time = between(0.2, 1)
 
     def on_start(self):
-        import jwt as pyjwt_inner
         subject = f"user-{random.randint(1000, 9999)}"
         payload = {
             "sub": subject,
             "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=2),
         }
-        self._qr_token = pyjwt_inner.encode(payload, QR_SECRET, algorithm="HS256")
+        self._qr_token = pyjwt.encode(payload, QR_SECRET, algorithm="HS256")
 
     @task(5)
     def scan_valid_qr(self):
@@ -95,10 +83,10 @@ class GatewayLoadTest(HttpUser):
             name="/api/v1/gate/validate [valid]",
             catch_response=True,
         ) as resp:
-            if resp.status_code == 200:
+            if resp.status_code == 200 and resp.json().get("valid") is True:
                 resp.success()
             else:
-                resp.failure(f"Unexpected status {resp.status_code}")
+                resp.failure(f"Expected valid=true, got {resp.text}")
 
     @task(1)
     def scan_invalid_qr(self):

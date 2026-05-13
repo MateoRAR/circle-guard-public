@@ -192,32 +192,81 @@ pipeline {
 
         stage('Locust Load Test') {
             steps {
-                // Relax Jenkins CSP so the Locust HTML report's inline scripts render correctly
+                // Relax Jenkins CSP so Locust HTML reports' inline scripts render correctly
                 script {
                     System.setProperty('hudson.model.DirectoryBrowserSupport.CSP', '')
                 }
-                withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
-                    sh '''
-                        kubectl port-forward -n circleguard-stage svc/circleguard-auth      18180:8180 &
-                        kubectl port-forward -n circleguard-stage svc/circleguard-gateway   18087:8087 &
-                        kubectl port-forward -n circleguard-stage svc/circleguard-promotion 18088:8088 &
-                        kubectl port-forward -n circleguard-stage svc/circleguard-dashboard 18084:8084 &
-                        sleep 8
-                        locust -f locust/locustfile.py AuthLoadTest \
-                            --host=http://localhost:18180 \
-                            --headless -u 10 -r 2 --run-time 2m \
-                            --html locust-report-stage.html || true
-                        pkill -f "kubectl port-forward" || true
-                    '''
+                withCredentials([
+                    string(credentialsId: 'jwt-secret', variable: 'JWT_SECRET'),
+                    string(credentialsId: 'qr-secret',  variable: 'QR_SECRET')
+                ]) {
+                    withKubeConfig([credentialsId: 'kubeconfig-circleguard']) {
+                        sh '''
+                            kubectl port-forward -n circleguard-stage svc/circleguard-auth      18180:8180 &
+                            kubectl port-forward -n circleguard-stage svc/circleguard-gateway   18087:8087 &
+                            kubectl port-forward -n circleguard-stage svc/circleguard-promotion 18088:8088 &
+                            kubectl port-forward -n circleguard-stage svc/circleguard-dashboard 18084:8084 &
+                            sleep 8
+
+                            locust -f locust/locustfile.py AuthLoadTest \
+                                --host=http://localhost:18180 \
+                                --headless -u 10 -r 2 --run-time 2m \
+                                --html locust-auth-stage.html || true
+
+                            locust -f locust/locustfile.py GatewayLoadTest \
+                                --host=http://localhost:18087 \
+                                --headless -u 10 -r 2 --run-time 1m \
+                                --html locust-gateway-stage.html || true
+
+                            locust -f locust/locustfile.py PromotionStatsLoadTest \
+                                --host=http://localhost:18088 \
+                                --headless -u 5 -r 1 --run-time 1m \
+                                --html locust-promotion-stage.html || true
+
+                            locust -f locust/locustfile.py DashboardLoadTest \
+                                --host=http://localhost:18084 \
+                                --headless -u 5 -r 1 --run-time 1m \
+                                --html locust-dashboard-stage.html || true
+
+                            pkill -f "kubectl port-forward" || true
+                        '''
+                    }
                 }
                 publishHTML([
-                    allowMissing:          false,
+                    allowMissing:          true,
                     alwaysLinkToLastBuild: false,
                     keepAll:               true,
                     reportDir:             '.',
-                    reportFiles:           'locust-report-stage.html',
-                    reportName:            'Locust Load Test Report',
-                    reportTitles:          'Locust — Stage'
+                    reportFiles:           'locust-auth-stage.html',
+                    reportName:            'Locust Auth Report',
+                    reportTitles:          'Auth — Stage'
+                ])
+                publishHTML([
+                    allowMissing:          true,
+                    alwaysLinkToLastBuild: false,
+                    keepAll:               true,
+                    reportDir:             '.',
+                    reportFiles:           'locust-gateway-stage.html',
+                    reportName:            'Locust Gateway Report',
+                    reportTitles:          'Gateway — Stage'
+                ])
+                publishHTML([
+                    allowMissing:          true,
+                    alwaysLinkToLastBuild: false,
+                    keepAll:               true,
+                    reportDir:             '.',
+                    reportFiles:           'locust-promotion-stage.html',
+                    reportName:            'Locust Promotion Report',
+                    reportTitles:          'Promotion — Stage'
+                ])
+                publishHTML([
+                    allowMissing:          true,
+                    alwaysLinkToLastBuild: false,
+                    keepAll:               true,
+                    reportDir:             '.',
+                    reportFiles:           'locust-dashboard-stage.html',
+                    reportName:            'Locust Dashboard Report',
+                    reportTitles:          'Dashboard — Stage'
                 ])
             }
         }
@@ -235,7 +284,7 @@ pipeline {
                 reportName:            'E2E Test Report',
                 reportTitles:          'E2E Tests — Stage'
             ])
-            archiveArtifacts artifacts: 'locust-report-stage.html, e2e/build/reports/tests/test/**/*', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'locust-*-stage.html, e2e/build/reports/tests/test/**/*', allowEmptyArchive: true
         }
         failure {
             echo 'Stage pipeline failed'
