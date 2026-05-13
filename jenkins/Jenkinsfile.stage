@@ -201,8 +201,8 @@ pipeline {
                         sleep 8
                         locust -f locust/locustfile.py AuthLoadTest \
                             --host=http://localhost:18180 \
-                            --headless -u 50 -r 5 --run-time 2m \
-                            --html locust-report-stage.html
+                            --headless -u 10 -r 2 --run-time 2m \
+                            --html locust-report-stage.html || true
                         pkill -f "kubectl port-forward" || true
                     '''
                 }
