@@ -15,6 +15,7 @@
 
 ### Correcciones
 -  production pipeline (MateoRAR)
+-  jenkins config for artifacts (MateoRAR)
 -  locust update (MateoRAR)
 -  artifact management (MateoRAR)
 -  test paramaeters (MateoRAR)
