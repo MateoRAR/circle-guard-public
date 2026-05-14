@@ -1,0 +1,30 @@
++ ./gradlew :services:circleguard-auth-service:test
+openjdk version "21.0.10" 2026-01-20 LTS
+OpenJDK Runtime Environment Temurin-21.0.10+7 (build 21.0.10+7-LTS)
+OpenJDK 64-Bit Server VM Temurin-21.0.10+7 (build 21.0.10+7-LTS, mixed mode)
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :services:circleguard-auth-service:checkKotlinGradlePluginConfigurationErrors
+> Task :services:circleguard-auth-service:compileKotlin NO-SOURCE
+> Task :services:circleguard-auth-service:compileJava UP-TO-DATE
+> Task :services:circleguard-auth-service:processResources UP-TO-DATE
+> Task :services:circleguard-auth-service:classes UP-TO-DATE
+> Task :services:circleguard-auth-service:compileTestKotlin NO-SOURCE
+> Task :services:circleguard-auth-service:compileTestJava
+> Task :services:circleguard-auth-service:processTestResources
+> Task :services:circleguard-auth-service:testClasses
+2026-05-12T15:43:25.032Z  INFO 7112 --- [ionShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-05-12T15:43:25.034Z  INFO 7112 --- [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-05-12T15:43:25.035Z  INFO 7112 --- [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+> Task :services:circleguard-auth-service:test
+
+[Incubating] Problems report is available at: file:///var/jenkins_home/workspace/circleguard-auth-service-dev/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 28s
+6 actionable tasks: 4 executed, 2 up-to-date

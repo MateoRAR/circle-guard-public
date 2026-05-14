@@ -3,6 +3,7 @@
 build/
 !**/src/**/build/
 **/build/
+!taller2-docs/**/build/
 
 # Java
 *.class
